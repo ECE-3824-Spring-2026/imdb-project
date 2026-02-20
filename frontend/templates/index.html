@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IMDB Actor Search</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f11;
+      color: #e2e2e8;
+      min-height: 100vh;
+    }
+
+    /* ── Header / hero ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid #2a2a40;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f5c518; /* IMDB yellow */
+      margin-bottom: 0.25rem;
+    }
+
+    header p {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    /* ── Search form ── */
+    .search-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .search-wrap form {
+      display: flex;
+      width: 100%;
+      max-width: 540px;
+      gap: 0.5rem;
+    }
+
+    .search-wrap input[type="text"] {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border: 1px solid #2a2a40;
+      border-radius: 8px;
+      background: #1c1c2e;
+      color: #e2e2e8;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-wrap input[type="text"]:focus {
+      border-color: #f5c518;
+    }
+
+    .search-wrap button {
+      padding: 0.7rem 1.4rem;
+      background: #f5c518;
+      color: #0f0f11;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .search-wrap button:hover { background: #e6b800; }
+
+    /* ── Main content ── */
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* ── Status messages ── */
+    .status {
+      text-align: center;
+      color: #666;
+      padding: 3rem 0;
+      font-size: 1rem;
+    }
+
+    .error-msg {
+      background: #2d1515;
+      border: 1px solid #7a2020;
+      color: #ff6b6b;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Result cards ── */
+    .result-count {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 1.25rem;
+    }
+
+    .actor-card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    /* Person bio row */
+    .actor-bio {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #2a2a40;
+      flex-wrap: wrap;
+    }
+
+    .actor-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f5c518;
+    }
+
+    .actor-meta {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .actor-meta span { margin-right: 1rem; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #2a2a40;
+      color: #aaa;
+      margin-right: 0.3rem;
+    }
+
+    /* Credits table */
+    .credits-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    thead tr {
+      background: #12122a;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.65rem 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.6rem 1.5rem;
+      border-top: 1px solid #1f1f35;
+      vertical-align: top;
+    }
+
+    tr:hover td { background: #20203a; }
+
+    .year { color: #888; white-space: nowrap; }
+
+    .role-actor    { color: #7ec8e3; }
+    .role-actress  { color: #e37ec8; }
+    .role-director { color: #e3c17e; }
+
+    .genre-tag {
+      display: inline-block;
+      background: #252538;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.75rem;
+      color: #aaa;
+      margin: 0.1rem 0.1rem 0 0;
+    }
+
+    .no-credits {
+      padding: 1rem 1.5rem;
+      color: #555;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>IMDB Actor Search</h1>
+  <p>Search the local MongoDB database by actor name</p>
+
+  <div class="search-wrap">
+    <form method="GET" action="/">
+      <input
+        type="text"
+        name="q"
+        value="{{ query | e }}"
+        placeholder="e.g. Tom Hanks"
+        autofocus
+        autocomplete="off"
+      />
+      <button type="submit">Search</button>
+    </form>
+  </div>
+</header>
+
+<main>
+
+  {% if error %}
+    <div class="error-msg">&#9888; {{ error }}</div>
+  {% endif %}
+
+  {% if not query %}
+    <p class="status">Enter an actor or director name above to search.</p>
+
+  {% elif not results and not error %}
+    <p class="status">No results found for &ldquo;{{ query | e }}&rdquo;.</p>
+
+  {% else %}
+    <p class="result-count">
+      {{ results | length }} person{{ 's' if results | length != 1 else '' }} found for
+      &ldquo;<strong>{{ query | e }}</strong>&rdquo;
+    </p>
+
+    {% for r in results %}
+      {% set person = r.person %}
+      {% set credits = r.credits %}
+
+      <div class="actor-card">
+
+        <!-- Bio row -->
+        <div class="actor-bio">
+          <span class="actor-name">{{ person.primaryName }}</span>
+
+          <span class="actor-meta">
+            {% if person.birthYear %}
+              <span>b. {{ person.birthYear }}</span>
+            {% endif %}
+            {% if person.deathYear %}
+              <span>d. {{ person.deathYear }}</span>
+            {% endif %}
+          </span>
+
+          <span>
+            {% if person.primaryProfession %}
+              {% for prof in person.primaryProfession %}
+                <span class="badge">{{ prof }}</span>
+              {% endfor %}
+            {% endif %}
+          </span>
+
+          <span class="actor-meta">{{ credits | length }} credit{{ 's' if credits | length != 1 else '' }}</span>
+        </div>
+
+        <!-- Credits table -->
+        {% if credits %}
+          <div class="credits-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Title</th>
+                  <th>Role</th>
+                  <th>Character</th>
+                  <th>Genres</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in credits %}
+                  <tr>
+                    <td class="year">{{ c.startYear or '—' }}</td>
+                    <td>{{ c.primaryTitle or '—' }}</td>
+                    <td class="role-{{ c.category }}">{{ c.category }}</td>
+                    <td>{{ c.characters_display or '—' }}</td>
+                    <td>
+                      {% if c.genres %}
+                        {% for g in c.genres %}
+                          <span class="genre-tag">{{ g }}</span>
+                        {% endfor %}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="no-credits">No credits found in the database.</p>
+        {% endif %}
+
+      </div><!-- /.actor-card -->
+    {% endfor %}
+  {% endif %}
+
+</main>
+</body>
+</html>
