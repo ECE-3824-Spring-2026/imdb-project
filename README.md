@@ -88,9 +88,9 @@ Work your way up in difficulty. Here are examples to guide you — you do not ha
 2. List all movies released in a specific year (e.g. 1994).
 3. Find the 10 most prolific actors/actresses by number of movie credits.
 4. List all movies a given person appeared in, sorted by year.
-5. Find all movies that share both a director and at least one actor.
-6. For each genre, find the most-credited actor/actress.
-7. Find pairs of actors who have appeared together in more than five movies.
+5. List all movies directed by a specific director.
+6. Find the most common genre in the database.
+7. Find all movies that two specific actors both appeared in.
 8. *(Your own)* — come up with one interesting question the data can answer and write the query.
 
 ---
